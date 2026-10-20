@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Daily Lift</title>
+<style>
+:root{--bg:#f3f5f0;--card:#fff;--ink:#14231c;--mute:#5d6b63;--line:#dde3da;--w:#2f6fed;--p:#e8590c;--c:#7048e8;--ok:#2b9348;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1713;--card:#18231d;--ink:#eef3ee;--mute:#9db0a4;--line:#2a3a31;--w:#6f9bff;--p:#ff8a4c;--c:#a58bff;--ok:#5fd37e;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1713;--card:#18231d;--ink:#eef3ee;--mute:#9db0a4;--line:#2a3a31;--w:#6f9bff;--p:#ff8a4c;--c:#a58bff;--ok:#5fd37e;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 "Trebuchet MS",system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
+main{max-width:480px;margin:0 auto;padding:16px}
+h1{font-size:26px;margin:8px 0 2px;letter-spacing:-.5px}
+.sub{color:var(--mute);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:14px}
+.row{display:flex;align-items:center;gap:14px}
+.grow{flex:1;min-width:0}
+.card h2{font-size:17px;margin:0}
+.big{font-size:28px;font-weight:700;line-height:1.1}
+.big small{font-size:15px;font-weight:400;color:var(--mute)}
+.note{color:var(--mute);font-size:14px;margin-top:2px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+button,a.btn{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:14px;padding:12px 16px;min-height:46px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--w);outline-offset:2px}
+button.main{color:#fff;border-color:transparent}
+.w .main{background:var(--w)}.p .main{background:var(--p)}.c .main{background:var(--c)}
+.done{background:var(--ok)!important}
+input{font:inherit;width:90px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.bar{height:10px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:12px}
+.bar i{display:block;height:100%;border-radius:6px;transition:width .3s}
+.w .bar i{background:var(--w)}.p .bar i{background:var(--p)}.c .bar i{background:var(--c)}
+svg.ring{width:84px;height:84px;flex:none}
+.t{font-size:13px;color:var(--mute)}
+details{margin-top:6px}summary{cursor:pointer;color:var(--mute);padding:8px 0}
+.wl a{display:block;padding:6px 0;color:var(--ink)}
+.wide .ringbig{width:200px;height:200px;margin:12px auto;display:block}
+.wide{text-align:center}.wide .btns{justify-content:center}
+.back{display:inline-block;margin:6px 0 10px;color:var(--mute)}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+var KEY="dailylift.v1",S;
+function load(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}
+ if(!S||!S.goals)S={goals:{workouts:12,protein:150},workouts:[],protein:{},creatine:{}}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function dk(d){d=d||new Date();return d.toLocaleDateString("sv")}
+function today(){return dk()}
+function monthWorkouts(){var m=today().slice(0,7);return S.workouts.filter(function(x){return x.indexOf(m)===0}).length}
+function proteinToday(){return (S.protein[today()]||[]).reduce(function(a,b){return a+b},0)}
+function streak(){var n=0,d=new Date();if(!S.creatine[dk(d)])d.setDate(d.getDate()-1);
+ while(S.creatine[dk(d)]){n++;d.setDate(d.getDate()-1)}return n}
+function ring(p,col,cls){p=Math.min(1,p);var r=36,c=2*Math.PI*r;
+ return '<svg class="ring '+(cls||"")+'" viewBox="0 0 84 84" role="img" aria-label="'+Math.round(p*100)+' percent"><circle cx="42" cy="42" r="36" fill="none" stroke="var(--line)" stroke-width="9"/><circle cx="42" cy="42" r="36" fill="none" stroke="var(--'+col+')" stroke-width="9" stroke-linecap="round" stroke-dasharray="'+(c*p)+' '+c+'" transform="rotate(-90 42 42)"/><text x="42" y="48" text-anchor="middle" font-size="18" font-weight="700" fill="var(--ink)">'+Math.round(p*100)+'%</text></svg>'}
+function addW(){S.workouts.push(today());save();render()}
+function undoW(){var i=S.workouts.lastIndexOf(today());if(i>-1){S.workouts.splice(i,1);save();render()}}
+function addP(g){g=Math.round(+g);if(!(g>0))return;(S.protein[today()]=S.protein[today()]||[]).push(g);save();render()}
+function addCustom(){addP(document.getElementById("cp").value)}
+function undoP(){var a=S.protein[today()];if(a&&a.length){a.pop();save();render()}}
+function togC(){if(S.creatine[today()])delete S.creatine[today()];else S.creatine[today()]=true;save();render()}
+function setGoal(k,v){v=Math.round(+v);if(v>0){S.goals[k]=v;save();render()}}
+
+function cardW(wide){var n=monthWorkouts(),g=S.goals.workouts,left=Math.max(0,g-n);
+ var info='<div class="big">'+n+' <small>of '+g+' this month</small></div><div class="note">'+(left?left+' to go':'Goal reached 🎉')+'</div>';
+ return '<section class="card w'+(wide?' wide':'')+'"><div class="'+(wide?'':'row')+'">'+(wide?'<h2>Workouts</h2>':'')+ring(n/g,'w',wide?'ringbig':'')+'<div class="grow">'+(wide?'':'<h2>Workouts</h2>')+info+'</div></div>'+
+ '<div class="btns"><button class="main" onclick="addW()">Log workout</button><button onclick="undoW()" aria-label="Undo last workout">Undo</button></div></section>'}
+function cardP(wide){var n=proteinToday(),g=S.goals.protein,left=Math.max(0,g-n);
+ var info='<div class="big">'+n+' g <small>of '+g+' g today</small></div><div class="note">'+(left?left+' g to go':'Goal reached 🎉')+'</div>';
+ return '<section class="card p'+(wide?' wide':'')+'"><div class="'+(wide?'':'row')+'">'+(wide?'<h2>Protein</h2>':'')+ring(n/g,'p',wide?'ringbig':'')+'<div class="grow">'+(wide?'':'<h2>Protein</h2>')+info+'</div></div>'+
+ '<div class="btns"><button class="main" onclick="addP(10)">+10</button><button class="main" onclick="addP(25)">+25</button><button class="main" onclick="addP(40)">+40</button><button onclick="undoP()" aria-label="Undo last protein entry">Undo</button></div>'+
+ '<div class="btns"><input id="cp" type="number" inputmode="numeric" min="1" placeholder="grams" aria-label="Custom grams"><button onclick="addCustom()">Add grams</button></div></section>'}
+function cardC(wide){var on=!!S.creatine[today()],s=streak();
+ return '<section class="card c'+(wide?' wide':'')+'"><div class="'+(wide?'':'row')+'"><div class="grow"><h2>Creatine</h2><div class="big">'+(on?'Taken ✓':'Not yet')+'</div><div class="note">'+s+'-day streak</div></div></div>'+
+ '<div class="btns"><button class="main'+(on?' done':'')+'" onclick="togC()">'+(on?'Taken today – tap to undo':'Mark as taken')+'</button></div></section>'}
+
+function render(){var h=location.hash.replace("#",""),a=document.getElementById("app"),base=location.href.split("#")[0];
+ var wide={workouts:cardW,protein:cardP,creatine:cardC}[h];
+ if(wide){a.innerHTML='<a class="back" href="#">← Full app</a>'+wide(true)+'<p class="t" style="text-align:center">Add this page to your home screen for a one-tap widget.</p>';return}
+ var d=new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
+ a.innerHTML='<h1>Daily Lift</h1><p class="sub">'+d+'</p>'+cardW()+cardP()+cardC()+
+ '<section class="card"><h2>Widgets</h2><p class="note">Each feature has its own compact page. Open it, then use your browser’s “Add to Home Screen”.</p><div class="wl"><a href="#workouts">Workouts widget</a><a href="#protein">Protein widget</a><a href="#creatine">Creatine widget</a></div></section>'+
+ '<section class="card"><details><summary>Goals</summary><div class="btns"><label class="t">Workouts per month<br><input type="number" inputmode="numeric" id="gw" value="'+S.goals.workouts+'" onchange="setGoal(\'workouts\',this.value)"></label><label class="t">Protein per day (g)<br><input type="number" inputmode="numeric" id="gp" value="'+S.goals.protein+'" onchange="setGoal(\'protein\',this.value)"></label></div></details></section>'}
+window.addEventListener("hashchange",render);
+load();render();
+</script>
+</body>
+</html>
